@@ -7,15 +7,15 @@ pub struct ID(pub usize);
 
 #[derive(Debug)]
 #[allow(dead_code)]
-struct Node<NodeDataType> {
-    id: ID,
-    data: NodeDataType,
+pub struct Node<NodeDataType> {
+    pub id: ID,
+    pub data: NodeDataType,
 }
 
 #[derive(Debug)]
-struct GraphData<NodeDataType> {
-    nodes: HashMap<ID, Node<NodeDataType>>,
-    edges: HashMap<ID, Vec<ID>>,
+pub struct GraphData<NodeDataType> {
+    pub nodes: HashMap<ID, Node<NodeDataType>>,
+    pub edges: HashMap<ID, Vec<ID>>,
 }
 
 impl<NodeDataType> GraphData<NodeDataType> {
@@ -28,8 +28,8 @@ impl<NodeDataType> GraphData<NodeDataType> {
 }
 
 pub struct Graph<NodeDataType> {
-    data: GraphData<NodeDataType>,
-    keys: Vec<ID>,
+    pub data: GraphData<NodeDataType>,
+    pub keys: Vec<ID>,
 }
 
 impl<NodeDataType: Default> Graph<NodeDataType> {
@@ -76,6 +76,16 @@ impl<NodeDataType: Default> Graph<NodeDataType> {
         self.add_directed_edge(to, from);
     }
 
+    pub fn neighbors(&self, id:ID) -> &Vec<ID> {
+        &self.data.edges[&id]
+    }
+
+    pub fn neighborhood(&self, id:ID) -> Vec<ID> {
+        //combine neighbors and self
+        let mut neighborhood = self.neighbors(id).clone();
+        neighborhood.push(id);
+        neighborhood
+    }
     pub fn is_undirected(&self) -> bool {
         for (from, tos) in self.data.edges.iter() {
             for to in tos {
