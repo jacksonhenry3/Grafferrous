@@ -1,74 +1,47 @@
-use fnv::FnvHashMap as HashMap;
-use rayon::prelude::*;
-use std::marker::Send;
+#![allow(unused)]
+
+use fnv::FnvHashMap;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub struct ID(pub usize);
 
-#[derive(Debug)]
-#[allow(dead_code)]
-pub struct Node<NodeDataType> {
-    pub id: ID,
-    pub data: NodeDataType,
-}
-
-#[derive(Debug)]
-pub struct GraphData<NodeDataType> {
-    pub nodes: HashMap<ID, Node<NodeDataType>>,
-    pub edges: HashMap<ID, Vec<ID>>,
-}
-
-impl<NodeDataType> GraphData<NodeDataType> {
-    fn new() -> Self {
-        Self {
-            nodes: HashMap::default(),
-            edges: HashMap::default(),
-        }
-    }
-}
-
 pub struct Graph<NodeDataType> {
-    pub data: GraphData<NodeDataType>,
-    pub keys: Vec<ID>,
+    pub node_data: FnvHashMap<ID, NodeDataType>,
+    pub edges: FnvHashMap<ID, Vec<ID>>,
+    pub nodes: Vec<ID>,
 }
 
 impl<NodeDataType: Default> Graph<NodeDataType> {
     pub fn new() -> Self {
         Self {
-            data: GraphData::new(),
-            keys: Vec::new(),
+            node_data: FnvHashMap::default(),
+            edges: FnvHashMap::default(),
+            nodes: Vec::new(),
         }
     }
 
     pub fn add_node(&mut self, id: ID) {
-        //check if data contains id
-        if self.data.nodes.contains_key(&id) {
+        if self.node_data.contains_key(&id) {
+            println!("Attempt to add node {:?}, that already exists: ", id);
             return;
         }
 
-        self.keys.push(id);
-        self.data.nodes.insert(
-            id,
-            Node {
-                id,
-                data: NodeDataType::default(),
-            },
-        );
+        self.nodes.push(id);
+        self.node_data.insert(id, NodeDataType::default());
     }
 
     pub fn add_directed_edge(&mut self, from: ID, to: ID) {
         //check if data contains from and to
-        if !self.data.nodes.contains_key(&from) || !self.data.nodes.contains_key(&to) {
+        if !self.node_data.contains_key(&from) || !self.node_data.contains_key(&to) {
             return;
         }
 
         //check if edge already exists
-        if self.data.edges.contains_key(&from) && self.data.edges.get(&from).unwrap().contains(&to)
-        {
+        if self.edges.contains_key(&from) && self.edges.get(&from).unwrap().contains(&to) {
             return;
         }
 
-        self.data.edges.entry(from).or_default().push(to);
+        self.edges.entry(from).or_default().push(to);
     }
 
     pub fn add_edge(&mut self, from: ID, to: ID) {
@@ -76,23 +49,24 @@ impl<NodeDataType: Default> Graph<NodeDataType> {
         self.add_directed_edge(to, from);
     }
 
-    pub fn neighbors(&self, id:ID) -> &Vec<ID> {
-        &self.data.edges[&id]
+    pub fn neighbors(&self, id: ID) -> &Vec<ID> {
+        &self.edges[&id]
     }
 
-    pub fn neighborhood(&self, id:ID) -> Vec<ID> {
+    pub fn neighborhood(&self, id: ID) -> Vec<ID> {
         //combine neighbors and self
         let mut neighborhood = self.neighbors(id).clone();
         neighborhood.push(id);
         neighborhood
     }
+
     pub fn is_undirected(&self) -> bool {
-        for (from, tos) in self.data.edges.iter() {
+        for (from, tos) in self.edges.iter() {
             for to in tos {
-                if !self.data.edges.contains_key(to) {
+                if !self.edges.contains_key(to) {
                     return false;
                 }
-                if !self.data.edges.get(to).unwrap().contains(from) {
+                if !self.edges.get(to).unwrap().contains(from) {
                     return false;
                 }
             }
@@ -113,23 +87,15 @@ pub fn generate_grid_graph<NodeDataType: Default + Send>(
 ) -> Graph<NodeDataType> {
     let mut g = Graph::new();
     //use rayon to generate a HashMap of nodes
-    g.data.nodes = (0..width * height)
-        .into_par_iter()
-        .map(|i| {
-            let id = ID(i);
-            let node = Node {
-                id,
-                data: NodeDataType::default(),
-            };
-            (id, node)
-        })
+    g.node_data = (0..width * height)
+        .into_iter()
+        .map(|i| (ID(i), NodeDataType::default()))
         .collect();
 
-    g.keys = g.data.nodes.keys().cloned().collect();
+    g.nodes = g.node_data.keys().cloned().collect();
 
-    //use rayon to generate a hasmap of edges
-    g.data.edges = (0..width * height)
-        .into_par_iter()
+    g.edges = (0..width * height)
+        .into_iter()
         .map(|i| {
             let id = ID(i);
             let mut tos = Vec::new();
@@ -156,29 +122,26 @@ pub fn generate_cycle_graph<NodeDataType: Default + Send>(n: usize) -> Graph<Nod
     let mut g = Graph::new();
 
     //use rayon to create a hashmap of nodes
-    g.data.nodes = (0..n)
-        .into_par_iter()
+    g.node_data = (0..n)
+        .into_iter()
         .map(|i| {
             let id = ID(i);
-            let node = Node {
-                id,
-                data: NodeDataType::default(),
-            };
+            let node = NodeDataType::default();
             (id, node)
         })
         .collect();
 
-    g.keys = g.data.nodes.keys().cloned().collect();
+    g.nodes = g.node_data.keys().cloned().collect();
 
     //use rayon to create a HashMap of edges
-    g.data.edges = g
-        .keys
-        .par_iter()
+    g.edges = g
+        .nodes
+        .iter()
         .map(|id| {
             let tos = vec![ID((id.0 + 1) % n), ID((id.0 + n - 1) % n)];
             (*id, tos)
         })
-        .collect::<HashMap<ID, Vec<ID>>>();
+        .collect::<FnvHashMap<ID, Vec<ID>>>();
 
     g
 }
@@ -190,24 +153,21 @@ pub fn generate_hexagonal_grid_graph<NodeDataType: Default + Send>(
     let mut g = Graph::new();
 
     //use rayon to create a hashmap of nodes
-    g.data.nodes = (0..width * height)
-        .into_par_iter()
+    g.node_data = (0..width * height)
+        .into_iter()
         .map(|i| {
             let id = ID(i);
-            let node = Node {
-                id,
-                data: NodeDataType::default(),
-            };
+            let node = NodeDataType::default();
             (id, node)
         })
         .collect();
 
-    g.keys = g.data.nodes.keys().cloned().collect();
+    g.nodes = g.node_data.keys().cloned().collect();
 
     //use rayon to create a HashMap of edges
-    g.data.edges = g
-        .keys
-        .par_iter()
+    g.edges = g
+        .nodes
+        .iter()
         .map(|id| {
             let mut tos = Vec::new();
             if id.0 % width != 0 {
@@ -239,7 +199,7 @@ pub fn generate_hexagonal_grid_graph<NodeDataType: Default + Send>(
             }
             (*id, tos)
         })
-        .collect::<HashMap<ID, Vec<ID>>>();
+        .collect::<FnvHashMap<ID, Vec<ID>>>();
 
     g
 }
