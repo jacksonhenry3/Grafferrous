@@ -76,11 +76,9 @@ impl<NodeDataType: Default> Graph<NodeDataType> {
         for (from, tos) in self.edges.iter() {
             for to in tos {
                 if !self.edges.contains_key(to) {
-                    println!("to: {:?}, from: {:?}", to, from);
                     return false;
                 }
                 if !self.edges.get(to).unwrap().contains(from) {
-                    println!("to: {:?}, from: {:?}", to, from);
                     return false;
                 }
             }
@@ -89,12 +87,10 @@ impl<NodeDataType: Default> Graph<NodeDataType> {
     }
 
     pub fn is_directed_acyclic(&self) -> bool {
-        println!("is_directed_acyclic");
         //check if graph is directed
         if self.is_undirected() {
             return false;
         }
-        println!("is_directed_acyclic");
 
         //check if graph is acyclic
         for node in self.nodes.iter() {
@@ -115,7 +111,6 @@ impl<NodeDataType: Default> Graph<NodeDataType> {
             let mut next_layer = Vec::new();
 
             for node in current_layer {
-                println!("node: {:?}, origin: {:?}", node, origin);
 
                 if node == origin {
                     return true;
@@ -268,8 +263,6 @@ pub fn count_paths(graph: &Graph<()>, start: &ID, end: &ID) -> usize {
 
     let reverse_neighbors = graph.reverse_neighbors(*end);
     for reverse_neighbor in reverse_neighbors {
-        println!("end {:?}", end);
-        println!("reverse_neighbor: {:?}", reverse_neighbor);
         if reverse_neighbor == start {
             paths += 1;
         } else {
