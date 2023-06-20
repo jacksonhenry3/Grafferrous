@@ -260,6 +260,10 @@ pub fn generate_hexagonal_grid_graph<NodeDataType: Default + Send>(
 }
 
 pub fn count_paths(graph: &Graph<()>, start: &ID, end: &ID) -> usize {
+    assert!(graph.nodes.contains(start), "graph does not contain start");
+    assert!(graph.nodes.contains(end), "graph does not contain end");
+    assert!(graph.is_directed_acyclic(), "graph is not directed acyclic");
+
     let mut paths = 0;
 
     let reverse_neighbors = graph.reverse_neighbors(*end);
