@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-use fnv::FnvHashMap;
+use fnv::{FnvHashMap, FnvHashSet};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub struct ID(pub usize);
@@ -8,6 +8,7 @@ pub struct ID(pub usize);
 pub struct Graph<NodeDataType> {
     pub node_data: FnvHashMap<ID, NodeDataType>,
     pub edges: FnvHashMap<ID, Vec<ID>>,
+    pub reverse_edges: FnvHashMap<ID, Vec<ID>>,
     pub nodes: Vec<ID>,
 }
 
@@ -16,6 +17,7 @@ impl<NodeDataType: Default> Graph<NodeDataType> {
         Self {
             node_data: FnvHashMap::default(),
             edges: FnvHashMap::default(),
+            reverse_edges: FnvHashMap::default(),
             nodes: Vec::new(),
         }
     }
@@ -42,6 +44,7 @@ impl<NodeDataType: Default> Graph<NodeDataType> {
         }
 
         self.edges.entry(from).or_default().push(to);
+        self.reverse_edges.entry(to).or_default().push(from);
     }
 
     pub fn add_edge(&mut self, from: ID, to: ID) {
@@ -49,8 +52,13 @@ impl<NodeDataType: Default> Graph<NodeDataType> {
         self.add_directed_edge(to, from);
     }
 
-    pub fn neighbors(&self, id: ID) -> &Vec<ID> {
-        &self.edges[&id]
+    pub fn neighbors(&self, id: ID) -> Vec<ID> {
+        //check if node exists
+        if !self.edges.contains_key(&id) {
+            return Vec::new();
+        } else {
+            self.edges[&id].clone()
+        }
     }
 
     pub fn neighborhood(&self, id: ID) -> Vec<ID> {
@@ -60,18 +68,65 @@ impl<NodeDataType: Default> Graph<NodeDataType> {
         neighborhood
     }
 
+    pub fn reverse_neighbors(&self, id: ID) -> &Vec<ID> {
+        &self.reverse_edges[&id]
+    }
+
     pub fn is_undirected(&self) -> bool {
         for (from, tos) in self.edges.iter() {
             for to in tos {
                 if !self.edges.contains_key(to) {
+                    println!("to: {:?}, from: {:?}", to, from);
                     return false;
                 }
                 if !self.edges.get(to).unwrap().contains(from) {
+                    println!("to: {:?}, from: {:?}", to, from);
                     return false;
                 }
             }
         }
         true
+    }
+
+    pub fn is_directed_acyclic(&self) -> bool {
+        println!("is_directed_acyclic");
+        //check if graph is directed
+        if self.is_undirected() {
+            return false;
+        }
+        println!("is_directed_acyclic");
+
+        //check if graph is acyclic
+        for node in self.nodes.iter() {
+            if self.is_part_of_a_cycle(*node) {
+                return false;
+            }
+        }
+        true
+    }
+
+    fn is_part_of_a_cycle(&self, origin: ID) -> bool {
+        /// Potentially check for cycles instead by checking for sources and sinks?
+        let mut depth = 0;
+
+        let mut current_layer = self.neighbors(origin);
+
+        while depth < self.nodes.len() {
+            let mut next_layer = Vec::new();
+
+            for node in current_layer {
+                println!("node: {:?}, origin: {:?}", node, origin);
+
+                if node == origin {
+                    return true;
+                } else {
+                    next_layer.append(&mut self.neighbors(node));
+                }
+            }
+            depth += 1;
+            current_layer = next_layer;
+        }
+        false
     }
 }
 
@@ -202,4 +257,21 @@ pub fn generate_hexagonal_grid_graph<NodeDataType: Default + Send>(
         .collect::<FnvHashMap<ID, Vec<ID>>>();
 
     g
+}
+
+pub fn count_paths(graph: &Graph<()>, start: &ID, end: &ID) -> usize {
+    let mut paths = 0;
+
+    let reverse_neighbors = graph.reverse_neighbors(*end);
+    for reverse_neighbor in reverse_neighbors {
+        println!("end {:?}", end);
+        println!("reverse_neighbor: {:?}", reverse_neighbor);
+        if reverse_neighbor == start {
+            paths += 1;
+        } else {
+            paths += count_paths(graph, start, reverse_neighbor);
+        }
+    }
+
+    paths
 }
