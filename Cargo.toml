@@ -9,7 +9,7 @@ repository = "https://github.com/jacksonhenry3/GraFerrous"
 homepage = "https://github.com/jacksonhenry3/GraFerrous"
 documentation = "https://docs.rs/grafferous"
 readme = "README.md"
-keywords = ["graph", "nodes", "edges", "vertices", "graphs", "networks", "data-structures", "algorithms"]
+keywords = ["graph", "nodes", "edges",  "graphs", "networks"]
 categories = ["data-structures", "algorithms", "graphs", "networks"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
