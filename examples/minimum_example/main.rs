@@ -1,7 +1,7 @@
 use graph::Graph;
 
-fn main(){
-    let mut g = Graph::<usize,u32>::new();
+fn main() {
+    let mut g = Graph::<usize, u32>::new();
 
     g.add_node(0);
     g.add_node(1);
@@ -13,5 +13,4 @@ fn main(){
     g.add_edge(2, 3);
 
     println!("{:?}", g);
-
 }

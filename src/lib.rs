@@ -1,13 +1,15 @@
 #![allow(unused)]
 
-use std::fmt::Debug;
 use core::hash::Hash;
 use fnv::{FnvHashMap, FnvHashSet};
-
+use std::fmt::Debug;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 /// A graph data structure with nodes of type `NodeDataType` and edges between them.
-pub struct Graph<IDDataType,NodeDataType> where IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy{
+pub struct Graph<IDDataType, NodeDataType>
+where
+    IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy,
+{
     /// A map from node IDs to their associated data.
     pub node_data: FnvHashMap<IDDataType, NodeDataType>,
     /// A map from node IDs to a vector of their outgoing edges.
@@ -18,29 +20,10 @@ pub struct Graph<IDDataType,NodeDataType> where IDDataType: Debug + PartialEq + 
     pub nodes: Vec<IDDataType>,
 }
 
-impl<IDDataType,NodeDataType: Default> Graph<IDDataType,NodeDataType> where IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy {
-    /// Adds a new node to the graph with the given ID.
-    ///
-    /// If a node with the given ID already exists, this function will print a warning message and do nothing.
-    ///
-    /// # Arguments
-    ///
-    /// * `id` - The ID of the new node to be added.
-    ///
-    pub fn add_node(&mut self, id: IDDataType) where IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy{
-        if self.node_data.contains_key(&id) {
-            println!("Attempt to add node {:?}, that already exists: ", id);
-            return;
-        }
-
-        self.nodes.push(id);
-        self.node_data.insert(id, NodeDataType::default());
-    }
-
-}
-
-
-impl<IDDataType,NodeDataType> Graph<IDDataType,NodeDataType> where IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy {
+impl<IDDataType, NodeDataType: Default> Graph<IDDataType, NodeDataType>
+where
+    IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy,
+{
     /// Creates a new, empty graph.
     pub fn new() -> Self {
         Self {
@@ -49,6 +32,22 @@ impl<IDDataType,NodeDataType> Graph<IDDataType,NodeDataType> where IDDataType: D
             reverse_edges: FnvHashMap::default(),
             nodes: Vec::new(),
         }
+    }
+
+    /// Adds a new node to the graph with the given ID.
+    ///
+    /// If a node with the given ID already exists, this function will print a warning message and do nothing.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The ID of the new node to be added.
+    ///
+    pub fn add_node(&mut self, id: IDDataType)
+    where
+        IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy,
+    {
+        //use add_node_with_data
+        self.add_node_with_data(id, NodeDataType::default());
     }
 
     /// Adds a new node to the graph with the given ID and data.
@@ -60,33 +59,51 @@ impl<IDDataType,NodeDataType> Graph<IDDataType,NodeDataType> where IDDataType: D
     /// * `id` - The ID of the new node to be added.
     /// * `data` - The data to be associated with the new node.
     ///
-    pub fn add_node_with_data(&mut self, id: IDDataType, data: NodeDataType) where IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy{
+    pub fn add_node_with_data(&mut self, id: IDDataType, data: NodeDataType)
+    where
+        IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy,
+    {
         if self.node_data.contains_key(&id) {
             println!("Attempt to add node {:?}, that already exists: ", id);
             return;
         }
 
         self.nodes.push(id);
+        self.edges.insert(id, Vec::new());
+        self.reverse_edges.insert(id, Vec::new());
         self.node_data.insert(id, data);
     }
 
     /// Add a directed edge from one node to another.
-    /// If either node does not exist, this function will do nothing.
+    /// If either node does not exist, this function will add them.
     /// If the edge already exists, this function will do nothing.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `from` - The ID of the node to add the edge from.
     /// * `to` - The ID of the node to add the edge to.
-    /// 
-    pub fn add_directed_edge(&mut self, from: IDDataType, to: IDDataType) where IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy{
-        //check if data contains from and to
-        if !self.node_data.contains_key(&from) || !self.node_data.contains_key(&to) {
-            return;
+    ///
+    pub fn add_directed_edge(&mut self, from: IDDataType, to: IDDataType)
+    where
+        IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy,
+    {
+        // if the node does not exist, add it
+        if !self.node_data.contains_key(&from) {
+            println!("Attempt to add edge from {:?} to {:?}, but {:?} does not exist. Adding {:?} to the graph.", from, to, from, from);
+            self.add_node(from);
+        }
+
+        if !self.node_data.contains_key(&to) {
+            println!("Attempt to add edge from {:?} to {:?}, but {:?} does not exist. Adding {:?} to the graph.", from, to, to, to);
+            self.add_node(to);
         }
 
         //check if edge already exists
         if self.edges.contains_key(&from) && self.edges.get(&from).unwrap().contains(&to) {
+            println!(
+                "Attempt to add edge from {:?} to {:?}, but edge already exists.",
+                from, to
+            );
             return;
         }
 
@@ -96,25 +113,31 @@ impl<IDDataType,NodeDataType> Graph<IDDataType,NodeDataType> where IDDataType: D
 
     /// Add an undirected edge between two nodes.
     /// If either node does not exist, this function will do nothing.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `from` - The ID of the node to add the edge from.
     /// * `to` - The ID of the node to add the edge to.
-    /// 
-    pub fn add_edge(&mut self, from: IDDataType, to: IDDataType) where IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy{
+    ///
+    pub fn add_edge(&mut self, from: IDDataType, to: IDDataType)
+    where
+        IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy,
+    {
         self.add_directed_edge(from, to);
         self.add_directed_edge(to, from);
     }
 
     /// Get the neighbors of a node.
     /// If the node does not exist, this function will return an empty vector.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `id` - The ID of the node to get the neighbors of.
-    /// 
-    pub fn neighbors(&self, id: IDDataType) -> Vec<IDDataType> where IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy{
+    ///
+    pub fn neighbors(&self, id: IDDataType) -> Vec<IDDataType>
+    where
+        IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy,
+    {
         //check if node exists
         if !self.edges.contains_key(&id) {
             Vec::new()
@@ -125,12 +148,15 @@ impl<IDDataType,NodeDataType> Graph<IDDataType,NodeDataType> where IDDataType: D
 
     /// Get the neighborhood of a node (which includes the node itself).
     /// If the node does not exist, this function will return an empty vector.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `id` - The ID of the node to get the neighborhood of.
-    /// 
-    pub fn neighborhood(&self, id: IDDataType) -> Vec<IDDataType>where IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy{
+    ///
+    pub fn neighborhood(&self, id: IDDataType) -> Vec<IDDataType>
+    where
+        IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy,
+    {
         //combine neighbors and self
         let mut neighborhood = self.neighbors(id);
         neighborhood.push(id);
@@ -139,12 +165,15 @@ impl<IDDataType,NodeDataType> Graph<IDDataType,NodeDataType> where IDDataType: D
 
     /// get the nodes for which the given node is a neighbor.
     /// If the node does not exist, this function will return an empty vector.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `id` - The ID of the node to get the reverse neighbors of.
-    /// 
-    pub fn reverse_neighbors(&self, id: IDDataType) -> &Vec<IDDataType> where IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy{
+    ///
+    pub fn reverse_neighbors(&self, id: IDDataType) -> &Vec<IDDataType>
+    where
+        IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy,
+    {
         &self.reverse_edges[&id]
     }
 
@@ -180,11 +209,11 @@ impl<IDDataType,NodeDataType> Graph<IDDataType,NodeDataType> where IDDataType: D
     }
 
     /// checks if the given node is part of a cycle.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `origin` - The ID of the node to check.
-    /// 
+    ///
     fn is_part_of_a_cycle(&self, origin: IDDataType) -> bool {
         /// Potentially check for cycles instead by checking for sources and sinks?
         let mut depth = 0;
@@ -208,21 +237,52 @@ impl<IDDataType,NodeDataType> Graph<IDDataType,NodeDataType> where IDDataType: D
     }
 }
 
-impl<IDDataType,NodeDataType: Default> Default for Graph<IDDataType,NodeDataType>where IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy{
+impl<IDDataType, NodeDataType: Default> Default for Graph<IDDataType, NodeDataType>
+where
+    IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy,
+{
     fn default() -> Self {
         Self::new()
     }
+}
+
+//macro to create a graph from a list of edges
+#[macro_export]
+macro_rules! graph {
+    ($($from:expr => $to:expr),*) => {
+        {
+            let mut g = Graph::new();
+            $(
+                g.add_edge($from, $to);
+            )*
+            g
+        }
+    };
+}
+
+//macro to create a graph from a list of nodes
+#[macro_export]
+macro_rules! graph_from_nodes {
+    ($($node:expr),*) => {
+        {
+            let mut g = Graph::new();
+            $(
+                g.add_node($node);
+            )*
+            g
+        }
+    };
 }
 
 /// generates a grid graph with the given width and height.
 pub fn generate_grid_graph<NodeDataType: Default + Send>(
     width: usize,
     height: usize,
-) -> Graph<(usize,usize),NodeDataType>{
+) -> Graph<(usize, usize), NodeDataType> {
     let mut g = Graph::new();
 
     g.node_data = (0..width)
-        .flat_map(|x| (0..height).map(move |y| ((x , y), NodeDataType::default())))
+        .flat_map(|x| (0..height).map(move |y| ((x, y), NodeDataType::default())))
         .collect();
 
     g.nodes = g.node_data.keys().cloned().collect();
@@ -235,7 +295,7 @@ pub fn generate_grid_graph<NodeDataType: Default + Send>(
             if id.0 > 0 {
                 tos.push((id.0 - 1, id.1));
             }
-            if id .0 < width - 1 {
+            if id.0 < width - 1 {
                 tos.push((id.0 + 1, id.1));
             }
             if id.1 > 0 {
@@ -251,9 +311,8 @@ pub fn generate_grid_graph<NodeDataType: Default + Send>(
     g
 }
 
-
 /// generates a cycle graph with the given number of nodes.
-pub fn generate_cycle_graph<NodeDataType: Default + Send>(n: usize) -> Graph<usize,NodeDataType> {
+pub fn generate_cycle_graph<NodeDataType: Default + Send>(n: usize) -> Graph<usize, NodeDataType> {
     let mut g = Graph::new();
 
     //use rayon to create a hashmap of nodes
@@ -281,10 +340,10 @@ pub fn generate_cycle_graph<NodeDataType: Default + Send>(n: usize) -> Graph<usi
 }
 
 /// generates a hexagonal grid graph with the given width and height.
-pub fn generate_hexagonal_grid_graph<IDDataType,NodeDataType: Default + Send>(
+pub fn generate_hexagonal_grid_graph<IDDataType, NodeDataType: Default + Send>(
     width: usize,
     height: usize,
-) -> Graph<usize,NodeDataType>{
+) -> Graph<usize, NodeDataType> {
     let mut g = Graph::new();
 
     //use rayon to create a hashmap of nodes
@@ -338,9 +397,12 @@ pub fn generate_hexagonal_grid_graph<IDDataType,NodeDataType: Default + Send>(
     g
 }
 
-
 /// counts the number of paths from the start node to the end node.
-pub fn count_paths<IDDataType, NodeDataType>(graph: &Graph<IDDataType, NodeDataType>, start: &IDDataType, end: &IDDataType) -> usize
+pub fn count_paths<IDDataType, NodeDataType: Default>(
+    graph: &Graph<IDDataType, NodeDataType>,
+    start: &IDDataType,
+    end: &IDDataType,
+) -> usize
 where
     IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy,
 {
@@ -350,6 +412,10 @@ where
     assert!(graph.nodes.contains(end), "graph does not contain end");
     assert!(graph.is_directed_acyclic(), "graph is not directed acyclic");
 
+    // base case
+    if start == end {
+        return 1;
+    }
 
     let mut paths = 0;
 
