@@ -340,10 +340,16 @@ pub fn generate_hexagonal_grid_graph<IDDataType,NodeDataType: Default + Send>(
 
 
 /// counts the number of paths from the start node to the end node.
-pub fn count_paths(graph: &Graph<(),()>, start:&()     , end: &()) -> usize {
+pub fn count_paths<IDDataType, NodeDataType>(graph: &Graph<IDDataType, NodeDataType>, start: &IDDataType, end: &IDDataType) -> usize
+where
+    IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy,
+{
+    // function body
+
     assert!(graph.nodes.contains(start), "graph does not contain start");
     assert!(graph.nodes.contains(end), "graph does not contain end");
     assert!(graph.is_directed_acyclic(), "graph is not directed acyclic");
+
 
     let mut paths = 0;
 
