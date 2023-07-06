@@ -9,8 +9,8 @@ edition = "2021"
 fnv = "1.0.7"
 
 [dev-dependencies]
-criterion = "0.4"
+criterion = "0.5.1"
 
 [[bench]]
-name = "my_benchmark"
+name = "benchmarks"
 harness = false
