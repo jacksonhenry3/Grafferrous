@@ -1,6 +1,6 @@
 use std::vec;
 
-use graph::Graph;
+use grafferous::Graph;
 
 #[derive(Debug, Default)]
 struct CustomData {

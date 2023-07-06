@@ -2,6 +2,10 @@
 
 use core::hash::Hash;
 use fnv::{FnvHashMap, FnvHashSet};
+use rand::{
+    distributions::{Distribution, Standard},
+    prelude::*,
+};
 use std::fmt::Debug;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -32,6 +36,16 @@ where
             reverse_edges: FnvHashMap::default(),
             nodes: Vec::new(),
         }
+    }
+
+    // graph from edges
+    pub fn from_edges(edges: &[(IDDataType, IDDataType)]) -> Self {
+        let mut graph = Self::new();
+
+        for (from, to) in edges {
+            graph.add_directed_edge(*from, *to);
+        }
+        graph
     }
 
     /// Adds a new node to the graph with the given ID.
@@ -89,22 +103,13 @@ where
     {
         // if the node does not exist, add it
         if !self.node_data.contains_key(&from) {
-            println!("Attempt to add edge from {:?} to {:?}, but {:?} does not exist. Adding {:?} to the graph.", from, to, from, from);
+            // println!("Attempt to add edge from {:?} to {:?}, but {:?} does not exist. Adding {:?} to the graph.", from, to, from, from);
             self.add_node(from);
         }
 
         if !self.node_data.contains_key(&to) {
-            println!("Attempt to add edge from {:?} to {:?}, but {:?} does not exist. Adding {:?} to the graph.", from, to, to, to);
+            // println!("Attempt to add edge from {:?} to {:?}, but {:?} does not exist. Adding {:?} to the graph.", from, to, to, to);
             self.add_node(to);
-        }
-
-        //check if edge already exists
-        if self.edges.contains_key(&from) && self.edges.get(&from).unwrap().contains(&to) {
-            println!(
-                "Attempt to add edge from {:?} to {:?}, but edge already exists.",
-                from, to
-            );
-            return;
         }
 
         self.edges.entry(from).or_default().push(to);
@@ -170,11 +175,22 @@ where
     ///
     /// * `id` - The ID of the node to get the reverse neighbors of.
     ///
-    pub fn reverse_neighbors(&self, id: IDDataType) -> &Vec<IDDataType>
-    where
-        IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy,
-    {
+    pub fn reverse_neighbors(&self, id: IDDataType) -> &Vec<IDDataType> {
         &self.reverse_edges[&id]
+    }
+
+    ///edge tuples
+    /// get the edges of the graph as a vector of tuples.
+    ///
+    ///
+    pub fn edge_tuples(&self) -> Vec<(IDDataType, IDDataType)> {
+        let mut edge_tuples = Vec::new();
+        for (from, tos) in self.edges.iter() {
+            for to in tos {
+                edge_tuples.push((*from, *to));
+            }
+        }
+        edge_tuples
     }
 
     /// checks if the graph is undirected.
@@ -252,22 +268,44 @@ macro_rules! graph {
     ($($from:expr => $to:expr),*) => {
         {
             let mut g = Graph::new();
+
+            //just add the first node
+
             $(
+
+                g.add_directed_edge($from, $to);
+            )*
+            g
+        }
+    };
+
+    ($($from:expr ; $to:expr),*) => {
+        {
+            let mut g = Graph::new();
+
+            //just add the first node
+
+            $(
+
                 g.add_edge($from, $to);
             )*
             g
         }
     };
-}
 
-//macro to create a graph from a list of nodes
-#[macro_export]
-macro_rules! graph_from_nodes {
-    ($($node:expr),*) => {
+
+    (($($id:expr,$data:expr),*),($($from:expr => $to:expr),*)) => {
         {
             let mut g = Graph::new();
+
             $(
-                g.add_node($node);
+                $(
+                    g.add_node_with_data($id,$data);
+                )*
+
+                $(
+                    g.add_directed_edge($from, $to);
+                )*
             )*
             g
         }
@@ -315,7 +353,7 @@ pub fn generate_grid_graph<NodeDataType: Default + Send>(
 pub fn generate_cycle_graph<NodeDataType: Default + Send>(n: usize) -> Graph<usize, NodeDataType> {
     let mut g = Graph::new();
 
-    //use rayon to create a hashmap of nodes
+    //create a hashmap of nodes
     g.node_data = (0..n)
         .map(|i| {
             let id = i;
@@ -326,7 +364,7 @@ pub fn generate_cycle_graph<NodeDataType: Default + Send>(n: usize) -> Graph<usi
 
     g.nodes = g.node_data.keys().cloned().collect();
 
-    //use rayon to create a HashMap of edges
+    //create a HashMap of edges
     g.edges = g
         .nodes
         .iter()
@@ -339,15 +377,14 @@ pub fn generate_cycle_graph<NodeDataType: Default + Send>(n: usize) -> Graph<usi
     g
 }
 
-/// generates a hexagonal grid graph with the given width and height.
-pub fn generate_hexagonal_grid_graph<IDDataType, NodeDataType: Default + Send>(
-    width: usize,
-    height: usize,
+pub fn generate_random_graph<NodeDataType: Default + Send>(
+    n: usize,
+    p: f64,
 ) -> Graph<usize, NodeDataType> {
     let mut g = Graph::new();
 
-    //use rayon to create a hashmap of nodes
-    g.node_data = (0..width * height)
+    //create a hashmap of nodes
+    g.node_data = (0..n)
         .map(|i| {
             let id = i;
             let node = NodeDataType::default();
@@ -357,37 +394,15 @@ pub fn generate_hexagonal_grid_graph<IDDataType, NodeDataType: Default + Send>(
 
     g.nodes = g.node_data.keys().cloned().collect();
 
-    //use rayon to create a HashMap of edges
+    //create a HashMap of edges
     g.edges = g
         .nodes
         .iter()
         .map(|id| {
             let mut tos = Vec::new();
-            if id % width != 0 {
-                tos.push(id - 1);
-            }
-            if id % width != width - 1 {
-                tos.push(id + 1);
-            }
-            if *id >= width {
-                tos.push(id - width);
-            }
-            if *id < width * (height - 1) {
-                tos.push(id + width);
-            }
-            if id % 2 == 0 {
-                if *id >= width {
-                    tos.push(id - width - 1);
-                }
-                if *id < width * (height - 1) {
-                    tos.push(id + width - 1);
-                }
-            } else {
-                if *id >= width {
-                    tos.push(id - width + 1);
-                }
-                if *id < width * (height - 1) {
-                    tos.push(id + width + 1);
+            for to in 0..n {
+                if rand::random::<f64>() < p {
+                    tos.push(to);
                 }
             }
             (*id, tos)
@@ -396,6 +411,8 @@ pub fn generate_hexagonal_grid_graph<IDDataType, NodeDataType: Default + Send>(
 
     g
 }
+
+//consider adding triangular grid and hexagonal grid
 
 /// counts the number of paths from the start node to the end node.
 pub fn count_paths<IDDataType, NodeDataType: Default>(

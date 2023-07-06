@@ -1,4 +1,4 @@
-use graph::Graph;
+use grafferous::Graph;
 
 fn main() {
     let mut g = Graph::<usize, u32>::new();

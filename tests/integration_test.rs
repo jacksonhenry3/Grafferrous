@@ -1,6 +1,6 @@
 // #![allow(dead_code)]
 
-use graph::{count_paths, generate_cycle_graph, generate_grid_graph, Graph};
+use grafferous::{count_paths, generate_cycle_graph, generate_grid_graph, Graph};
 
 #[test]
 fn test_generate_cycle_graph() {
@@ -58,4 +58,39 @@ fn test_count_paths_cycle() {
     g.add_edge(6, 0);
 
     count_paths(&g, &0, &6);
+}
+
+//test teh graph macro
+#[test]
+fn test_graph_macro() {
+    let g: Graph<i32, ()> = grafferous::graph! {
+        0 => 1,
+        1 => 2,
+        2 => 3,
+        3 => 4,
+        4 => 5,
+        5 => 6
+    };
+
+    assert_eq!(g.nodes.len(), 7);
+    assert_eq!(g.edge_tuples().len(), 6);
+
+    let g: Graph<i32, ()> = grafferous::graph! {
+        0 ; 1,
+        1 ; 2,
+        2 ; 3,
+        3 ; 4,
+        4 ; 5,
+        5 ; 6
+    };
+
+    assert_eq!(g.nodes.len(), 7);
+    assert_eq!(g.edge_tuples().len(), 12);
+}
+
+//random graph test
+#[test]
+fn test_random_graph() {
+    let g = grafferous::generate_random_graph::<u32>(100, 0.1);
+    assert_eq!(g.nodes.len(), 100);
 }

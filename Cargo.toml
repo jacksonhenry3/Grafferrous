@@ -1,12 +1,22 @@
 [package]
-name = "graph"
+name = "grafferous"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+authors = ["Jackson Henry"]
+description = "A rusty graph library with a focus on generuc data in nodes"
+repository = "https://github.com/jacksonhenry3/GraFerrous"
+homepage = "https://github.com/jacksonhenry3/GraFerrous"
+documentation = "https://docs.rs/grafferous"
+readme = "README.md"
+keywords = ["graph", "nodes", "edges", "vertices", "graphs", "networks", "data-structures", "algorithms"]
+categories = ["data-structures", "algorithms", "graphs", "networks"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 fnv = "1.0.7"
+rand = "0.8.5"
 
 [dev-dependencies]
 criterion = "0.5.1"
@@ -14,3 +24,5 @@ criterion = "0.5.1"
 [[bench]]
 name = "benchmarks"
 harness = false
+
+

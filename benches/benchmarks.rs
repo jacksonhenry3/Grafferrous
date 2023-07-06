@@ -1,6 +1,6 @@
 #![allow(unused)]
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use graph::{generate_cycle_graph, generate_grid_graph, Graph};
+use grafferous::{generate_cycle_graph, generate_grid_graph, Graph};
 
 fn benchmark_empty_creation(c: &mut Criterion) {
     c.bench_function("empty", |b| b.iter(Graph::<usize, u32>::new));
