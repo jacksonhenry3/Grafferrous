@@ -1,11 +1,6 @@
-#![allow(unused)]
-
 use core::hash::Hash;
-use fnv::{FnvHashMap, FnvHashSet};
-use rand::{
-    distributions::{Distribution, Standard},
-    prelude::*,
-};
+use fnv::FnvHashMap;
+
 use std::fmt::Debug;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -56,10 +51,7 @@ where
     ///
     /// * `id` - The ID of the new node to be added.
     ///
-    pub fn add_node(&mut self, id: IDDataType)
-    where
-        IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy,
-    {
+    pub fn add_node(&mut self, id: IDDataType) {
         //use add_node_with_data
         self.add_node_with_data(id, NodeDataType::default());
     }
@@ -73,10 +65,7 @@ where
     /// * `id` - The ID of the new node to be added.
     /// * `data` - The data to be associated with the new node.
     ///
-    pub fn add_node_with_data(&mut self, id: IDDataType, data: NodeDataType)
-    where
-        IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy,
-    {
+    pub fn add_node_with_data(&mut self, id: IDDataType, data: NodeDataType) {
         if self.node_data.contains_key(&id) {
             println!("Attempt to add node {:?}, that already exists: ", id);
             return;
@@ -97,10 +86,7 @@ where
     /// * `from` - The ID of the node to add the edge from.
     /// * `to` - The ID of the node to add the edge to.
     ///
-    pub fn add_directed_edge(&mut self, from: IDDataType, to: IDDataType)
-    where
-        IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy,
-    {
+    pub fn add_directed_edge(&mut self, from: IDDataType, to: IDDataType) {
         // if the node does not exist, add it
         if !self.node_data.contains_key(&from) {
             // println!("Attempt to add edge from {:?} to {:?}, but {:?} does not exist. Adding {:?} to the graph.", from, to, from, from);
@@ -124,10 +110,7 @@ where
     /// * `from` - The ID of the node to add the edge from.
     /// * `to` - The ID of the node to add the edge to.
     ///
-    pub fn add_edge(&mut self, from: IDDataType, to: IDDataType)
-    where
-        IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy,
-    {
+    pub fn add_edge(&mut self, from: IDDataType, to: IDDataType) {
         self.add_directed_edge(from, to);
         self.add_directed_edge(to, from);
     }
@@ -139,10 +122,7 @@ where
     ///
     /// * `id` - The ID of the node to get the neighbors of.
     ///
-    pub fn neighbors(&self, id: IDDataType) -> Vec<IDDataType>
-    where
-        IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy,
-    {
+    pub fn neighbors(&self, id: IDDataType) -> Vec<IDDataType> {
         //check if node exists
         if !self.edges.contains_key(&id) {
             Vec::new()
@@ -158,10 +138,7 @@ where
     ///
     /// * `id` - The ID of the node to get the neighborhood of.
     ///
-    pub fn neighborhood(&self, id: IDDataType) -> Vec<IDDataType>
-    where
-        IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy,
-    {
+    pub fn neighborhood(&self, id: IDDataType) -> Vec<IDDataType> {
         //combine neighbors and self
         let mut neighborhood = self.neighbors(id);
         neighborhood.push(id);
@@ -231,7 +208,7 @@ where
     /// * `origin` - The ID of the node to check.
     ///
     fn is_part_of_a_cycle(&self, origin: IDDataType) -> bool {
-        /// Potentially check for cycles instead by checking for sources and sinks?
+        // Potentially check for cycles instead by checking for sources and sinks?
         let mut depth = 0;
 
         let mut current_layer = self.neighbors(origin);
@@ -377,6 +354,13 @@ pub fn generate_cycle_graph<NodeDataType: Default + Send>(n: usize) -> Graph<usi
     g
 }
 
+/// generates a random graph with the given number of nodes and edge probability.
+///
+/// # Arguments
+///
+/// * `n` - The number of nodes in the graph.
+/// * `p` - The probability of an edge between two nodes.
+///
 pub fn generate_random_graph<NodeDataType: Default + Send>(
     n: usize,
     p: f64,
