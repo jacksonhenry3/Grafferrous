@@ -103,7 +103,7 @@ where
     }
 
     /// Add an undirected edge between two nodes.
-    /// If either node does not exist, this function will do nothing.
+    /// If either node does not exist, this function will add them.
     ///
     /// # Arguments
     ///
@@ -403,6 +403,7 @@ pub fn count_paths<IDDataType, NodeDataType: Default>(
     graph: &Graph<IDDataType, NodeDataType>,
     start: &IDDataType,
     end: &IDDataType,
+    max_depth: Option<usize>,
 ) -> usize
 where
     IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy,
@@ -411,11 +412,18 @@ where
 
     assert!(graph.nodes.contains(start), "graph does not contain start");
     assert!(graph.nodes.contains(end), "graph does not contain end");
-    assert!(graph.is_directed_acyclic(), "graph is not directed acyclic");
+
+    if max_depth.is_none(){
+        assert!(graph.is_directed_acyclic(), "graph must directed acyclic, or a depth must be given.");
+    }
 
     // base case
     if start == end {
         return 1;
+    }
+
+    if max_depth.is_some() && max_depth.unwrap() == 0 {
+        return 0;
     }
 
     let mut paths = 0;
@@ -425,7 +433,7 @@ where
         if reverse_neighbor == start {
             paths += 1;
         } else {
-            paths += count_paths(graph, start, reverse_neighbor);
+            paths += count_paths(graph, start, reverse_neighbor, max_depth.map(|x| x - 1));
         }
     }
 

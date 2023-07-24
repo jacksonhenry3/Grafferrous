@@ -34,13 +34,13 @@ fn test_count_paths() {
     g.add_directed_edge(4, 5);
     g.add_directed_edge(5, 6);
 
-    assert_eq!(count_paths(&g, &0, &6), 1);
-    assert_eq!(count_paths(&g, &1, &6), 1);
-    assert_eq!(count_paths(&g, &2, &6), 1);
-    assert_eq!(count_paths(&g, &3, &6), 1);
-    assert_eq!(count_paths(&g, &4, &6), 1);
-    assert_eq!(count_paths(&g, &5, &6), 1);
-    assert_eq!(count_paths(&g, &6, &6), 1);
+    assert_eq!(count_paths(&g, &0, &6, None), 1);
+    assert_eq!(count_paths(&g, &1, &6, None), 1);
+    assert_eq!(count_paths(&g, &2, &6, None), 1);
+    assert_eq!(count_paths(&g, &3, &6, None), 1);
+    assert_eq!(count_paths(&g, &4, &6, None), 1);
+    assert_eq!(count_paths(&g, &5, &6, None), 1);
+    assert_eq!(count_paths(&g, &6, &6, None), 1);
 }
 
 //test count paths fails on cycles
@@ -57,7 +57,7 @@ fn test_count_paths_cycle() {
     g.add_edge(5, 6);
     g.add_edge(6, 0);
 
-    count_paths(&g, &0, &6);
+    count_paths(&g, &0, &6, None);
 }
 
 //test teh graph macro
