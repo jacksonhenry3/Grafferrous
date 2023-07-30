@@ -1,7 +1,7 @@
 use core::hash::Hash;
 use fnv::FnvHashMap;
 
-use std::fmt::Debug;
+use std::{collections::HashSet, fmt::Debug};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 /// A graph data structure with nodes of type `NodeDataType` and edges between them.
@@ -398,7 +398,6 @@ pub fn generate_random_graph<NodeDataType: Default + Send>(
 
 //consider adding triangular grid and hexagonal grid
 
-/// counts the number of paths from the start node to the end node.
 pub fn count_paths<IDDataType, NodeDataType: Default>(
     graph: &Graph<IDDataType, NodeDataType>,
     start: &IDDataType,
@@ -408,34 +407,104 @@ pub fn count_paths<IDDataType, NodeDataType: Default>(
 where
     IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy,
 {
+    _count_paths(graph, start, end, max_depth, 0, Vec::new())
+}
+
+/// counts the number of paths from the start node to the end node.
+fn _count_paths<IDDataType, NodeDataType: Default>(
+    graph: &Graph<IDDataType, NodeDataType>,
+    start: &IDDataType,
+    end: &IDDataType,
+    max_depth: Option<usize>,
+    depth: usize,
+    mut path: Vec<IDDataType>,
+) -> usize
+where
+    IDDataType: Debug + PartialEq + Eq + Hash + Clone + Copy,
+{
     // function body
 
     assert!(graph.nodes.contains(start), "graph does not contain start");
     assert!(graph.nodes.contains(end), "graph does not contain end");
 
-    if max_depth.is_none(){
-        assert!(graph.is_directed_acyclic(), "graph must directed acyclic, or a depth must be given.");
+    if max_depth.is_none() {
+        assert!(
+            graph.is_directed_acyclic(),
+            "graph must directed acyclic, or a depth must be given."
+        );
     }
+
+    path.push(end.clone());
 
     // base case
-    if start == end {
-        return 1;
+    if start == end && depth > 0 {
+        return 0;
     }
 
-    if max_depth.is_some() && max_depth.unwrap() == 0 {
+    if max_depth.is_some() && depth >= max_depth.unwrap() {
+        // println!("max depth reached with start {:?} and end {:?}, depth {:?}, max depth: {:?}", start, end, depth, max_depth);
         return 0;
     }
 
     let mut paths = 0;
 
     let reverse_neighbors = graph.reverse_neighbors(*end);
+
     for reverse_neighbor in reverse_neighbors {
+        // println!("reverse neighbor: {:?}", reverse_neighbor);
         if reverse_neighbor == start {
+            path.push(reverse_neighbor.clone());
+            println!("path: {:?}", path);
             paths += 1;
         } else {
-            paths += count_paths(graph, start, reverse_neighbor, max_depth.map(|x| x - 1));
+            // path.push(reverse_neighbor.clone());
+            paths += _count_paths(
+                graph,
+                start,
+                reverse_neighbor,
+                max_depth,
+                depth + 1,
+                path.clone(),
+            );
         }
     }
 
     paths
+}
+
+pub fn find_circuits<'a, Node, NodeDataType: Default>(
+    graph: &'a Graph<Node, NodeDataType>,
+    start: &'a Node,
+    max_length:usize,
+) -> Vec<(Node,Node)>
+where
+    Node: Debug + PartialEq + Eq + Hash + Clone + Copy,
+{
+    let mut circuits = Vec::new();
+    let mut stack = Vec::new();
+    let mut visited = HashSet::new();
+
+    stack.push((*start, *start,0));
+
+    while let Some((start, end,length)) = stack.pop() {
+        if length >= max_length {
+            continue;
+        }
+        
+
+    
+
+        visited.insert(end);
+
+        for neighbor in graph.neighbors(end) {
+            if neighbor == start && length > 0{
+                // println!("found circuit: {:?} -> {:?}", start, end);
+                circuits.push((start,neighbor));
+            } else {
+                stack.push( (start,neighbor, length+1));
+            }
+        }
+    }
+
+    circuits
 }
